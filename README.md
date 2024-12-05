@@ -1,1 +1,2 @@
-Causal inference project.
+# Project in Causal Inference: Compulsory Licensing of Patents and Innovation
+
