@@ -1,0 +1,92 @@
+---
+title: "Causal Inference Project"
+author: "Bjarke Hautop, Cecilie Krongaar, Ferdinand Roesen"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(fixest)
+```
+
+
+# Load and clean data
+
+```{r}
+data <- readRDS("exam_TWEA1.R")
+
+head(data)
+```
+
+Start with only using the variables described in the assignment?
+
+```{r}
+subset_data <- data %>%
+  select(
+    uspto_class, grntyr, count_cl, anypatent, count_usa, count_cl_itt,
+    mainclass_id, subcl, twea
+  )
+```
+
+
+```{r}
+head(subset_data)
+```
+
+anypatent, mainclass_id, subcl, and twea need to be factors.
+
+```{r}
+subset_data$anypatent <- as.factor(subset_data$anypatent)
+subset_data$mainclass_id <- as.factor(subset_data$mainclass_id)
+subset_data$subcl <- as.factor(subset_data$subcl)
+subset_data$twea <- as.factor(subset_data$twea)
+```
+
+
+
+# Replicating what they did 
+
+## Page 9:
+
+Page 9 they have this equation:
+
+$$\text{Patents by US inventors}_{c, t}=\alpha_0+\boldsymbol\beta \textbf{Treat}_c \cdot
+\text{postTWEA}_t+\gamma \cdot Z_{c,t}+\delta_t+f_c+\epsilon_{c,t}, $$
+
+where TREAT is a vector of treatment variables and postTWEA equals $1$ for every
+year after $1918$. In our most basic specification, we define a subclass as 
+treated if it contained at least one enemy-owned patent that was licensed to a 
+US firm. The control variable Z measures the total number of foreign patents; 
+it controls for unobservable factors, such as technological progress within 
+subclasses. The variable $\delta$ indicates year fixed effects and $f$ subclass 
+fixed effects. The coefficient $\beta$ on the interaction term between TREATc 
+and postTWEAt is the standard difference-in-differences estimator.
+
+idk what they mean.
+
+## Replicating Table 2 page 10
+
+Seems like we don't have the same dataset?
+
+```{r}
+nlevels(factor(data$subcl))
+```
+
+but the table says they have 7248 subclasses?
+
+
+```{r}
+# Model 2: Subclass has at least one license
+model1 <- feols(
+  count_usa ~ licensed_class | grntyr + subcl,
+  cluster = "subcl",
+  data = data
+)
+
+summary(model1)
+```
