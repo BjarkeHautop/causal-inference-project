@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, warning=FALSE, message=FALSE}
 library(dplyr)
-library(fixest)
 ```
 
 
@@ -47,46 +46,3 @@ subset_data$subcl <- as.factor(subset_data$subcl)
 subset_data$twea <- as.factor(subset_data$twea)
 ```
 
-
-
-# Replicating what they did 
-
-## Page 9:
-
-Page 9 they have this equation:
-
-$$\text{Patents by US inventors}_{c, t}=\alpha_0+\boldsymbol\beta \textbf{Treat}_c \cdot
-\text{postTWEA}_t+\gamma \cdot Z_{c,t}+\delta_t+f_c+\epsilon_{c,t}, $$
-
-where TREAT is a vector of treatment variables and postTWEA equals $1$ for every
-year after $1918$. In our most basic specification, we define a subclass as 
-treated if it contained at least one enemy-owned patent that was licensed to a 
-US firm. The control variable Z measures the total number of foreign patents; 
-it controls for unobservable factors, such as technological progress within 
-subclasses. The variable $\delta$ indicates year fixed effects and $f$ subclass 
-fixed effects. The coefficient $\beta$ on the interaction term between TREATc 
-and postTWEAt is the standard difference-in-differences estimator.
-
-idk what they mean.
-
-## Replicating Table 2 page 10
-
-Seems like we don't have the same dataset?
-
-```{r}
-nlevels(factor(data$subcl))
-```
-
-but the table says they have 7248 subclasses?
-
-
-```{r}
-# Model 2: Subclass has at least one license
-model1 <- feols(
-  count_usa ~ licensed_class | grntyr + subcl,
-  cluster = "subcl",
-  data = data
-)
-
-summary(model1)
-```
