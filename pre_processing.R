@@ -87,7 +87,8 @@ patent_df <- patents_df_all |> filter(!uspto_class %in% not_all_years) |>
                              count_france,    # change every year
                              count_germany,   # change every year
                              count_cl,        # change after 1918 only
-                             count_cl_itt     # change after 1918 only
+                             count_cl_itt,     # change after 1918 only
+                             twea
                            ) |>
                            mutate(mainclass_name = case_when(
                              mainclass_id == 8 ~"Bleaching and dyeing; fluid  treatment and chemical modification of textiles and fibers",
@@ -101,7 +102,9 @@ patent_df <- patents_df_all |> filter(!uspto_class %in% not_all_years) |>
                              mainclass_id == 534 ~ "Organic Compounds—Containing a noble gas",
                              mainclass_id == 536 ~ "Organic Compounds—Carbohydrates and derivatives",
                              TRUE ~ "error"
-                           )) |> group_by(uspto_class) |>
+                           ),
+                           mainclass_id = as.character(mainclass_id)
+                           ) |> group_by(uspto_class) |>
                                  mutate(cum_usa = cumsum(count_usa),
          cum_france = cumsum(count_france),
          cum_germany = cumsum(count_germany)) |>
@@ -131,7 +134,8 @@ docu <- matrix(c(
   "count_cl_itt", "Number of available patents under forced licensing", "Only one change after 1918",
   "cum_usa", "Cumulative sum of count_usa per uspto_class", "Yes",
   "cum_france", "Cumulative sum of count_france per uspto_class", "Yes",
-  "cum_germany", "Cumulative sum of count_germany per uspto_class", "Yes"
+  "cum_germany", "Cumulative sum of count_germany per uspto_class", "Yes",
+  "twea", "1 if grntyr >= 1919, 0 otherwise"
 ), byrow = TRUE, ncol = 3)
 
 docu
