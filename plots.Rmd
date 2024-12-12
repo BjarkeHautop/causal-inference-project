@@ -1,0 +1,161 @@
+---
+title: "Causal Inference Project"
+author: "Bjarke Hautop, Cecilie Krongaar, Ferdinand Roesen"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, warning=FALSE, message=FALSE}
+library(ivDiag)
+library(ggplot2)
+library(dplyr)
+```
+
+# Loading data
+
+```{r}
+load("docu.Rdata")
+load("patent_df.Rdata")
+```
+
+```{r}
+head(patent_df)
+```
+
+```{r}
+patent_df$grntyr <- as.factor(patent_df$grntyr)
+```
+
+Using ivDiag package, see https://yiqingxu.org/packages/ivDiag/articles/iv_tutorial.html#estimation-and-inference
+
+```{r 2SLS raw}
+g <- ivDiag(
+  data = patent_df, 
+  Y = "count_usa", 
+  D = "count_cl", 
+  Z = "count_cl_itt", 
+  controls = NULL, 
+  cl = NULL,
+  bootstrap = FALSE,
+  run.AR = FALSExx
+)
+names(g)
+```
+
+Extract F_stat effective
+
+```{r}
+f_stat <- g$F_stat[4]
+```
+
+
+
+```{r first stage plot}
+
+first_stage <- lm(count_cl ~ count_cl_itt, data = patent_df)
+# Plot the instrument (X-axis) against the treatment (Y-axis)
+par(mar = c(4, 4, 2, 2))  # Adjust margins for a clean plot
+plot(
+  patent_df$count_cl_itt, patent_df$count_cl,
+  col = "#777777", cex = 0.5, 
+  main = "First-Stage Raw",
+  xlab = "Instrument (AP)",
+  ylab = "Treatment (PA)"
+)
+
+# Add the fitted regression line
+abline(first_stage, col = "red", lwd = 2, lty = 2)
+```
+
+jitter to plot and add F-statistic
+
+```{r}
+# Basic plot with jitter
+par(mar = c(4, 4, 2, 2))  # Adjust margins for a clean plot
+plot(
+  jitter(patent_df$count_cl_itt), jitter(patent_df$count_cl),
+  col = "#777777", cex = 0.5, 
+  main = "First-Stage Raw",
+  xlab = "Instrument (AP)",
+  ylab = "Treatment (PA)"
+)
+
+# Add the fitted regression line
+abline(first_stage, col = "red", lwd = 2, lty = 2)
+
+# Add the F-statistic to the plot
+text(x = max(patent_df$count_cl_itt) * 0.1,
+     y = max(patent_df$count_cl) * 0.9,
+     labels = paste("F: ", floor(f_stat)),
+     col = "blue", cex = 1.2)
+```
+
+
+
+```{r first stage plot (partial out)}
+# first stage (partial out)
+z_res <- lm(count_cl_itt ~ mainclass_id + grntyr, data = patent_df)$residuals
+d_res <- lm(count_cl ~ mainclass_id + grntyr, data = patent_df)$residuals
+plot(z_res, d_res, col = "#777777", cex = 0.5, 
+     main = "First stage Covariates Partialled Out", 
+     xlab = "Residualized Instrument (AP)", 
+     ylab = "Residualized Treatment (PA)")
+abline(lm(d_res ~ z_res), col = 2, lwd = 2, lty = 2)
+```
+
+
+```{r 2SLS with controls}
+controls <- c("mainclass_id", "grntyr")
+g_controls <- ivDiag(
+  data = patent_df, 
+  Y = "count_usa", 
+  D = "count_cl", 
+  Z = "count_cl_itt", 
+  controls = controls, 
+  cl = NULL,
+  bootstrap = FALSE,
+  run.AR = FALSE
+)
+names(g_controls)
+```
+
+
+Add F-statistic
+
+
+```{r}
+f_stat_control <- g_controls$F_stat[4]
+```
+
+```{r}
+# first stage (partial out)
+z_res <- lm(count_cl_itt ~ mainclass_id + grntyr, data = patent_df)$residuals
+d_res <- lm(count_cl ~ mainclass_id + grntyr, data = patent_df)$residuals
+plot(z_res, d_res, col = "#777777", cex = 0.5, 
+     main = "First stage Covariates Partialled Out", 
+     xlab = "Residualized Instrument (AP)", 
+     ylab = "Residualized Treatment (PA)")
+abline(lm(d_res ~ z_res), col = 2, lwd = 2, lty = 2)
+# Add the F-statistic to the plot
+text(x = max(patent_df$count_cl_itt) * 0.1,
+     y = max(patent_df$count_cl) * 0.9,
+     labels = paste("F: ", floor(f_stat_control)),
+     col = "blue", cex = 1.2)
+```
+
+
+
+```{r}
+g_controls$est_ols
+g_controls$est_2sls
+g_controls$F_stat
+```
+
+```{r}
+plot_coef(g_controls)
+```
+
